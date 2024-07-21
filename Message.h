@@ -16,6 +16,8 @@ struct header {
     header(size_t size) : size(size) {messageType = types::null;}
 };
 
+const size_t HEADER_SIZE = sizeof(header);
+
 class Message {
 public:
 

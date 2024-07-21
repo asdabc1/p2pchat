@@ -3,6 +3,7 @@
 
 #include <boost/asio.hpp>
 #include <iostream>
+#include <thread>
 
 #include "Message.h"
 #include "MsgQ.h"
@@ -15,9 +16,14 @@ private:
 
     io_context& io;
     ip::tcp::socket soc;
+    ip::tcp::acceptor acceptor;
 
     Message temp;
     MsgQ queue;
+
+    bool isConnected = false;
+
+    void pushTempMsgToQueue();
 
 public:
     void receiveHeader();
@@ -26,6 +32,7 @@ public:
     void sendBody();
 
     void connect(const char* address, int port);
+    void receiveConnection();
     void disconnect();
     bool isUp() {return soc.is_open();}
 

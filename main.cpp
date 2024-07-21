@@ -4,6 +4,7 @@
 using namespace boost::asio;
 
 int main() {
+    io_context io;
 
     return 0;
 }
