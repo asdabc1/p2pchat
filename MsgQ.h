@@ -7,13 +7,15 @@
 #include "Message.h"
 
 class MsgQ {
-private:
-
-    std::deque<Message> queue;
-
 public:
 
+    std::deque<Message> queue;
     std::mutex mutex;
+
+    std::vector<Message> awaitingMsgs;
+
+    void addToQueue(Message& msg);
+    void dumpAwaiting();
 };
 
 

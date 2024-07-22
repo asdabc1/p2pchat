@@ -13,7 +13,8 @@ struct header {
     size_t size;
     types messageType;
 
-    header(size_t size) : size(size) {messageType = types::null;}
+    explicit header(size_t size) : size(size) {messageType = types::null;}
+    header() : size(0), messageType(types::null) {}
 };
 
 const size_t HEADER_SIZE = sizeof(header);
@@ -26,8 +27,8 @@ public:
 
     void update() {body.resize(this->head.size);}
 
-    Message();
-    Message(size_t size) : head(size) {this->update();}
+    Message() = default;
+    explicit Message(size_t size) : head(size) {this->update();}
 };
 
 #endif //CHAT_MESSAGE_H

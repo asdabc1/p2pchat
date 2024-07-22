@@ -23,13 +23,13 @@ private:
 
     bool isConnected = false;
 
-    void pushTempMsgToQueue();
+    void sendHeader(Message& msg);
+    void sendBody(Message& msg);
 
 public:
     void receiveHeader();
     void receiveBody();
-    void sendHeader();
-    void sendBody();
+    void sendMessage(Message& msg);
 
     void connect(const char* address, int port);
     void receiveConnection();
