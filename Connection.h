@@ -31,10 +31,10 @@ public:
     void receiveBody();
     void sendMessage(Message& msg);
 
-    void connect(const char* address, int port);
+    void connect(const char* address, unsigned int port);
     void receiveConnection();
     void disconnect();
-    bool isUp() {return soc.is_open();}
+    bool isUp() {return soc.is_open() && isConnected;}
 
     Connection(io_context& io, unsigned int port);
 };

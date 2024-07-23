@@ -1,11 +1,13 @@
 #include "Connection.h"
 
 Connection::Connection(io_context& io, unsigned int port) : io(io), soc(io), acceptor(io, ip::tcp::endpoint(ip::tcp::v4(), port)) {
+    ip::address_v4 add = ip::address_v4::from_string("127.0.0.1");
 
-    soc.bind(ip::tcp::endpoint(ip::tcp::v4(), port));
+    soc.open(ip::tcp::v4());
+    soc.bind(ip::tcp::endpoint(add, port));
 }
 
-void Connection::connect(const char* address, int port) {
+void Connection::connect(const char* address, unsigned int port) {
     ip::address_v4 add = boost::asio::ip::address_v4::from_string(address);
 
     ip::tcp::endpoint remoteChatter(add, port);
@@ -22,14 +24,28 @@ void Connection::connect(const char* address, int port) {
 }
 
 void Connection::receiveConnection() {
-    std::thread thread([this](){
-        acceptor.accept(soc);
+    acceptor.async_accept([this](const std::error_code& ec, ip::tcp::socket socket) {
+        if (!ec) {
+            std::cout << "A new incoming connection from " << socket.remote_endpoint() << '\n'
+                      << "Are you willing to accept? (y/n): ";
+
+            char choice;
+            if (std::cin.get()) {
+                soc = std::move(socket);
+                isConnected = true;
+            }
+
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+        receiveConnection();
     });
 }
 
 void Connection::disconnect() {
     soc.close();
     std::cout << "disconnected\n";
+    isConnected = false;
 }
 
 void Connection::receiveHeader() {
