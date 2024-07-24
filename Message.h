@@ -2,6 +2,8 @@
 #define CHAT_MESSAGE_H
 
 #include <vector>
+#include <iostream>
+#include <string>
 
 enum class types {
     verification,
@@ -29,6 +31,8 @@ public:
 
     Message() = default;
     explicit Message(size_t size) : head(size) {this->update();}
+
+    friend std::ostream& operator<<(std::ostream& os, Message& msg);
 };
 
 #endif //CHAT_MESSAGE_H

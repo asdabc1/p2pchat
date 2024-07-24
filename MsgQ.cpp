@@ -16,6 +16,16 @@ void MsgQ::addToQueue(Message& msg) {
         awaitingMsgs.push_back(msg);
 }
 
+Message MsgQ::getFromQueue() {
+    while (!mutex.try_lock()) {}
+
+    Message t = queue.front();
+    queue.pop_front();
+
+    mutex.unlock();
+    return t;
+}
+
 void MsgQ::dumpAwaiting() {
     while (!mutex.try_lock()) {}
 

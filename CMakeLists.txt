@@ -11,4 +11,5 @@ add_executable(chat main.cpp
         Connection.cpp
         Connection.h
         MsgQ.cpp
-        MsgQ.h)
+        MsgQ.h
+        Message.cpp)

@@ -36,6 +36,11 @@ public:
     void disconnect();
     bool isUp() {return soc.is_open() && isConnected;}
 
+    bool qIsEmpty() {return queue.queue.empty();}
+    Message retreiveMsgFromQueue() {Message tempor = queue.queue.front(); queue.queue.pop_front(); return temp;}
+
+    ip::tcp::endpoint chatter() {return soc.remote_endpoint();}
+
     Connection(io_context& io, unsigned int port);
 };
 

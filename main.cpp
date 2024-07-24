@@ -9,7 +9,7 @@
 
 using namespace boost::asio;
 
-void sendMessageFromQueue(MsgQ& queue);
+void sendMessageFromQueue(MsgQ& queue, Connection& connection);
 void receiveAndPrintMsg(Connection& connection);
 
 int main() {
@@ -56,11 +56,42 @@ int main() {
     }
 
     MsgQ outgoingMessages;
-    std::mutex outputMutex;
 
-    
+    std::cout << "\n\n\nNow chatting with " << connection.chatter() << std::endl;
 
+    std::thread messageReceptionThread(receiveAndPrintMsg, std::ref(connection));
+    std::thread messageSendThread(sendMessageFromQueue, std::ref(outgoingMessages), std::ref(connection));
+
+
+
+    messageReceptionThread.join();
+    messageSendThread.join();
     io.stop();
     ioThread.join();
     return 0;
+}
+
+void sendMessageFromQueue(MsgQ& queue, Connection& connection) {
+    while (connection.isUp()) {
+        if (queue.queue.empty())
+            continue;
+
+        Message temp;
+        temp = queue.getFromQueue();
+
+        connection.sendMessage(temp);
+    }
+}
+
+void receiveAndPrintMsg(Connection& connection) {
+    while (connection.isUp()) {
+        if (connection.qIsEmpty())
+            continue;
+
+        Message temp;
+        temp = connection.retreiveMsgFromQueue();
+
+        std::cout << "\nOther chatter:\n";
+        std::cout << temp << std::endl;
+    }
 }

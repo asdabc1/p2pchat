@@ -73,6 +73,14 @@ build CMakeFiles\chat.dir\MsgQ.cpp.obj: CXX_COMPILER__chat_unscanned_Debug C$:\U
   TARGET_COMPILE_PDB = CMakeFiles\chat.dir\
   TARGET_PDB = chat.pdb
 
+build CMakeFiles\chat.dir\Message.cpp.obj: CXX_COMPILER__chat_unscanned_Debug C$:\Users\asdab\CLionProjects\chat\Message.cpp || cmake_object_order_depends_target_chat
+  FLAGS = /DWIN32 /D_WINDOWS /EHsc /Ob0 /Od /RTC1 -std:c++17 -MDd -Zi
+  INCLUDES = -IC:\Users\asdab\.vcpkg-clion\vcpkg\installed\x64-windows\include
+  OBJECT_DIR = CMakeFiles\chat.dir
+  OBJECT_FILE_DIR = CMakeFiles\chat.dir
+  TARGET_COMPILE_PDB = CMakeFiles\chat.dir\
+  TARGET_PDB = chat.pdb
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target chat
@@ -81,7 +89,7 @@ build CMakeFiles\chat.dir\MsgQ.cpp.obj: CXX_COMPILER__chat_unscanned_Debug C$:\U
 #############################################
 # Link the executable chat.exe
 
-build chat.exe: CXX_EXECUTABLE_LINKER__chat_Debug CMakeFiles\chat.dir\main.cpp.obj CMakeFiles\chat.dir\Connection.cpp.obj CMakeFiles\chat.dir\MsgQ.cpp.obj
+build chat.exe: CXX_EXECUTABLE_LINKER__chat_Debug CMakeFiles\chat.dir\main.cpp.obj CMakeFiles\chat.dir\Connection.cpp.obj CMakeFiles\chat.dir\MsgQ.cpp.obj CMakeFiles\chat.dir\Message.cpp.obj
   FLAGS = /DWIN32 /D_WINDOWS /EHsc /Ob0 /Od /RTC1 -MDd -Zi
   LINK_FLAGS = /machine:x64 /debug /INCREMENTAL /subsystem:console
   LINK_LIBRARIES = kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib

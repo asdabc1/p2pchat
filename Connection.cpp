@@ -16,6 +16,7 @@ void Connection::connect(const char* address, unsigned int port) {
         if (!ec) {
             std::cout << "Now connected to " << add.to_string() << std::endl;
             isConnected = true;
+            this->receiveHeader();
         }
 
         else
@@ -30,9 +31,11 @@ void Connection::receiveConnection() {
                       << "Are you willing to accept? (y/n): ";
 
             char choice;
-            if (std::cin.get()) {
+            std::cin >> choice;
+            if (choice == 'y') {
                 soc = std::move(socket);
                 isConnected = true;
+                this->receiveHeader();
             }
 
             std::cin.clear();

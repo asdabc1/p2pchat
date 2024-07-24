@@ -15,6 +15,7 @@ public:
     std::vector<Message> awaitingMsgs;
 
     void addToQueue(Message& msg);
+    Message getFromQueue();
     void dumpAwaiting();
 };
 
