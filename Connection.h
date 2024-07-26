@@ -23,20 +23,19 @@ private:
 
     bool isConnected = false;
 
-    void sendHeader(Message& msg);
-    void sendBody(Message& msg);
-
 public:
     void receiveHeader();
     void receiveBody();
-    void sendMessage(Message& msg);
+    void sendHeader(Message msg);
+    void sendBody(Message msg);
 
     void connect(const char* address, unsigned int port);
     void receiveConnection();
     void disconnect();
-    bool isUp() {return soc.is_open() && isConnected;}
+    bool isUp() {return isConnected;}
 
     bool qIsEmpty() {return queue.queue.empty();}
+    bool socIsOpen() {return soc.is_open();}
     Message retreiveMsgFromQueue() {Message tempor = queue.queue.front(); queue.queue.pop_front(); return temp;}
 
     ip::tcp::endpoint chatter() {return soc.remote_endpoint();}

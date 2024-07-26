@@ -33,6 +33,7 @@ public:
     explicit Message(size_t size) : head(size) {this->update();}
 
     friend std::ostream& operator<<(std::ostream& os, Message& msg);
+    Message& operator<<(std::string input);
 };
 
 #endif //CHAT_MESSAGE_H

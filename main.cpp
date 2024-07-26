@@ -14,6 +14,7 @@ void receiveAndPrintMsg(Connection& connection);
 
 int main() {
     io_context io;
+    executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
     char control;
 
     std::cout << "Chat application - temporary console interface\n";
@@ -39,13 +40,10 @@ int main() {
         std::cin >> remotePort;
 
         connection.connect(address.c_str(), remotePort);
+        std::cout << "\nAttempting to connect...\n";
     }
     else if (control == 'a') {
-        for (int i = 0; i < 21; i++) {  //temporary solution
-            std::this_thread::sleep_for(std::chrono::seconds(3));
-            if (connection.isUp())
-                break;
-        }
+        connection.receiveConnection();
     }
 
     if (!connection.isUp()) {
@@ -62,12 +60,40 @@ int main() {
     std::thread messageReceptionThread(receiveAndPrintMsg, std::ref(connection));
     std::thread messageSendThread(sendMessageFromQueue, std::ref(outgoingMessages), std::ref(connection));
 
+    std::string input;
+    Message msgToBeSent;
 
 
+    std::cout << "Type \'!!quit\' to quit the application\n";
+    std::cin.get();
+    while (true) {
+        std::getline(std::cin, input, '\n');
+
+        if (input == "!!quit")
+            break;
+
+        if (!connection.isUp() && connection.socIsOpen()) {
+            std::cout << "Disconnected by remote host.\n";
+            break;
+        }
+
+        msgToBeSent << input;
+        outgoingMessages.addToQueue(msgToBeSent);
+
+        msgToBeSent = Message();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+
+    connection.disconnect();
     messageReceptionThread.join();
     messageSendThread.join();
     io.stop();
     ioThread.join();
+
+    std::cout << "\n\nPress ENTER to quit\n";
+    std::cin.get();
+
     return 0;
 }
 
@@ -79,7 +105,9 @@ void sendMessageFromQueue(MsgQ& queue, Connection& connection) {
         Message temp;
         temp = queue.getFromQueue();
 
-        connection.sendMessage(temp);
+        connection.sendHeader(temp);
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 }
 
@@ -91,7 +119,9 @@ void receiveAndPrintMsg(Connection& connection) {
         Message temp;
         temp = connection.retreiveMsgFromQueue();
 
-        std::cout << "\nOther chatter:\n";
+        std::cout << "\n\nOther chatter:\n";
         std::cout << temp << std::endl;
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
     }
 }

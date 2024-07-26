@@ -10,6 +10,7 @@ void MsgQ::addToQueue(Message& msg) {
 
             awaitingMsgs.clear();
         }
+        mutex.unlock();
     }
 
     else

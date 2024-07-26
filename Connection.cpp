@@ -12,42 +12,47 @@ void Connection::connect(const char* address, unsigned int port) {
 
     ip::tcp::endpoint remoteChatter(add, port);
 
-    soc.async_connect(remoteChatter, [this, &add](const std::error_code& ec) {
-        if (!ec) {
-            std::cout << "Now connected to " << add.to_string() << std::endl;
-            isConnected = true;
-            this->receiveHeader();
-        }
+    boost::system::error_code ec;
+    soc.connect(remoteChatter, ec);
 
-        else
-            std::cout << "Failed to establish connection with " << add.to_string() << '\n';
-    });
+    if (!ec) {
+        std::cout << "now connected\n";
+        isConnected = true;
+        this->receiveHeader();
+    }
+    else
+        std::cout << "Connection error: " << ec.message() << std::endl;
 }
 
 void Connection::receiveConnection() {
-    acceptor.async_accept([this](const std::error_code& ec, ip::tcp::socket socket) {
-        if (!ec) {
-            std::cout << "A new incoming connection from " << socket.remote_endpoint() << '\n'
-                      << "Are you willing to accept? (y/n): ";
+    ip::tcp::socket tempSoc(io);
+    boost::system::error_code ec;
 
-            char choice;
-            std::cin >> choice;
-            if (choice == 'y') {
-                soc = std::move(socket);
-                isConnected = true;
-                this->receiveHeader();
-            }
+    std::cout << "\nWaiting for connections...\n";
 
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    acceptor.accept(tempSoc, ec);
+
+    if (!ec) {
+        std::cout << "Connection attempt from " << tempSoc.remote_endpoint() << ". Are you willing to accept? (y/n)";
+        char choice;
+        std::cin >> choice;
+
+        if (choice == 'y') {
+            soc = std::move(tempSoc);
+            std::cout << "connected\n";
+            isConnected = true;
+            this->receiveHeader();
         }
-        receiveConnection();
-    });
+        else
+            receiveConnection();
+    }
+    else
+        std::cout << "Problem with receiving a connection: " << ec.message() << std::endl;
 }
 
 void Connection::disconnect() {
     soc.close();
-    std::cout << "disconnected\n";
+    std::cout << "\n\ndisconnected\n";
     isConnected = false;
 }
 
@@ -79,22 +84,19 @@ void Connection::receiveBody() {
     });
 }
 
-void Connection::sendHeader(Message& msg) {
-    async_write(soc, buffer(&msg.head, HEADER_SIZE), [this, &msg](const std::error_code& ec, size_t length) {
-        if (ec)
-            std::cout << "Failed to send the header of a message: " << ec.message() << '\n';
-
-        sendBody(msg);
+void Connection::sendHeader(Message msg) {
+    async_write(soc, buffer(&msg.head, HEADER_SIZE), [this, msg](const std::error_code& ec, size_t length) {
+        if (!ec) {
+            sendBody(msg);
+        }
+        else
+            std::cout << "Failed to send the header of a message: " << ec.message() << std::endl;
     });
 }
 
-void Connection::sendBody(Message& msg) {
-    async_write(soc, buffer(msg.body.data(), msg.head.size), [this](const std::error_code& ec, size_t length) {
+void Connection::sendBody(Message msg) {
+    async_write(soc, buffer(msg.body.data(), msg.head.size), [](const std::error_code& ec, size_t length) {
         if (ec)
             std::cout << "Failed to send the contents of the message: " << ec.message() << '\n';
     });
-}
-
-void Connection::sendMessage(Message &msg) {
-    sendHeader(msg);
 }
