@@ -63,10 +63,10 @@ void Connection::receiveHeader() {
             receiveBody();
         }
 
-        else
+        else {
             std::cout << "Failed to receive the header of the message: " << ec.message() << '\n';
-
-        receiveHeader();
+            disconnect();
+        }
     });
 }
 
@@ -75,12 +75,13 @@ void Connection::receiveBody() {
         if (!ec) {
             queue.addToQueue(temp);
             temp = Message();
+            receiveHeader();
         }
 
-        else
-            std::cout << "Failed to receive the contents of the message: " << ec.message() << '\n';
-
-        receiveHeader();
+        else {
+            std::cout << "Failed to receive the contents of the message: " << ec.message() << '\n';\
+            disconnect();
+        }
     });
 }
 
@@ -89,14 +90,18 @@ void Connection::sendHeader(Message msg) {
         if (!ec) {
             sendBody(msg);
         }
-        else
+        else {
             std::cout << "Failed to send the header of a message: " << ec.message() << std::endl;
+            disconnect();
+        }
     });
 }
 
 void Connection::sendBody(Message msg) {
-    async_write(soc, buffer(msg.body.data(), msg.head.size), [](const std::error_code& ec, size_t length) {
-        if (ec)
+    async_write(soc, buffer(msg.body.data(), msg.head.size), [this](const std::error_code& ec, size_t length) {
+        if (ec) {
             std::cout << "Failed to send the contents of the message: " << ec.message() << '\n';
+            disconnect();
+        }
     });
 }

@@ -36,7 +36,7 @@ public:
 
     bool qIsEmpty() {return queue.queue.empty();}
     bool socIsOpen() {return soc.is_open();}
-    Message retreiveMsgFromQueue() {Message tempor = queue.queue.front(); queue.queue.pop_front(); return temp;}
+    Message retreiveMsgFromQueue() {return queue.getFromQueue();}
 
     ip::tcp::endpoint chatter() {return soc.remote_endpoint();}
 
