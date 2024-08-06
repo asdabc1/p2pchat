@@ -1,6 +1,8 @@
 #include "Connection.h"
 
-Connection::Connection(io_context& io, unsigned int port) : io(io), soc(io), acceptor(io, ip::tcp::endpoint(ip::tcp::v4(), port)) {
+Connection::Connection(io_context& io, unsigned int port) : io(io), soc(io), tempAcceptorSocket(io) , acceptor(io, ip::tcp::endpoint(ip::tcp::v4(), port)) {
+    Bind(wxEVT_THREAD, &Connection::connectionReceived, this);
+
     ip::address_v4 add = ip::address_v4::from_string("127.0.0.1");
 
     soc.open(ip::tcp::v4());
@@ -25,30 +27,50 @@ void Connection::connect(const char* address, unsigned int port) {
 }
 
 void Connection::receiveConnection() {
-    ip::tcp::socket tempSoc(io);
-    boost::system::error_code ec;
+    acceptor.async_accept(io, [this](const std::error_code& ec, ip::tcp::socket socket) {
+        if (!ec) {
+            tempAcceptorSocket = std::move(socket);
 
-    std::cout << "\nWaiting for connections...\n";
-
-    acceptor.accept(tempSoc, ec);
-
-    if (!ec) {
-        std::cout << "Connection attempt from " << tempSoc.remote_endpoint() << ". Are you willing to accept? (y/n)";
-        char choice;
-        std::cin >> choice;
-
-        if (choice == 'y') {
-            soc = std::move(tempSoc);
-            std::cout << "connected\n";
-            isConnected = true;
-            this->receiveHeader();
+            auto event = new wxThreadEvent();
+            event->SetPayload(this);
+            wxQueueEvent(this, event);
         }
-        else
-            receiveConnection();
-    }
-    else
-        std::cout << "Problem with receiving a connection: " << ec.message() << std::endl;
+        else {
+            wxMessageBox("Error with connection reception:" + ec.message(), "Error", wxCLOSE | wxICON_ERROR);
+        }
+        receiveConnection();
+    });
+
 }
+
+
+ConnectionAcceptDialog::ConnectionAcceptDialog(Connection* con, ip::tcp::socket socket) : wxDialog(nullptr, wxID_ANY, "New connection pending", wxDefaultPosition, wxSize(300, 300)), tempSocket(std::move(socket)) {
+    connection = con;
+
+    std::stringstream temp;
+    std::string remoteAddress;
+
+    temp << tempSocket.remote_endpoint();
+    temp >> remoteAddress;
+
+    auto connectInfo = new wxStaticText(this, wxID_ANY, "New connection request from: " + remoteAddress, wxPoint(10, 10));
+    auto accept = new wxButton(this, 2140, "Accept", wxPoint(10, 250), wxSize(50, -1));
+    auto reject = new wxButton(this, 2141, "Reject", wxPoint(250, 250), wxSize(50, -1));
+
+    Bind(wxEVT_BUTTON, &ConnectionAcceptDialog::onAccept, this, 2140);
+    Bind(wxEVT_BUTTON, &ConnectionAcceptDialog::onReject, this, 2141);
+    }
+
+void ConnectionAcceptDialog::onAccept(wxCommandEvent& event) {
+    connection->soc = std::move(tempSocket);
+    connection->isConnected = true;
+    this->Close(false);
+}
+
+void ConnectionAcceptDialog::onReject(wxCommandEvent& event) {
+    this->Close(true);
+}
+
 
 void Connection::disconnect() {
     soc.close();
@@ -104,4 +126,15 @@ void Connection::sendBody(Message msg) {
             disconnect();
         }
     });
+}
+
+void Connection::changePort(int port) {
+    ip::address_v4 add = ip::address_v4::from_string("127.0.0.1");
+
+    soc.bind(ip::tcp::endpoint(add, port));
+}
+
+void Connection::connectionReceived(wxThreadEvent &event) {
+    auto dial = new ConnectionAcceptDialog(this, std::move(this->tempAcceptorSocket));
+    dial->Show(true);
 }
