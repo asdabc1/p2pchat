@@ -12,7 +12,9 @@ enum {
    IDaboutCon = 4,
    IDfontSize = 5,
    IDfontColor = 6,
-   IDaboutPort = 7
+   IDaboutPort = 7,
+
+   IDsend = 8,
 };
 
 bool ChatApp::OnInit() {
@@ -25,8 +27,22 @@ bool ChatApp::OnInit() {
 }
 
 MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPosition, wxSize(1150, 650)), connection(io, port) {
+    Bind(wxEVT_THREAD, &MainFrame::messagePrint, this);
+
     connection.receiveConnection();
     ioThread = std::thread([this](){io.run();});
+    messageSend = std::thread([this](){
+        while(threadsWork)
+            if (!outgoingMessages.queue.empty())
+                sendMessage();
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    });
+    messageReceive = std::thread([this]() {
+        while(threadsWork)
+            if(!connection.qIsEmpty())
+                messageReceived();
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    });
 
     auto menuConnection = new wxMenu();
     menuConnection->Append(IDconnect, "&Connect\tCtrl-N");
@@ -55,6 +71,12 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
     Bind(wxEVT_MENU, &MainFrame::helpAbout, this, wxID_ABOUT);
     Bind(wxEVT_MENU, &MainFrame::helpPort, this, IDaboutPort);
     Bind(wxEVT_MENU, &MainFrame::connect, this, IDconnect);
+
+    messageDisplay = new wxListBox(this, wxID_ANY, wxPoint(10, 10), wxSize(800, 500));
+    messageInput = new wxTextCtrl(this, wxID_ANY, "",wxPoint(10, 525), wxSize(725, -1));
+    messageSendButton = new wxButton(this, IDsend, "Send", wxPoint(750, 525), wxSize(65, -1));
+
+    Bind(wxEVT_BUTTON, &MainFrame::sendButton, this, IDsend);
 
     m_backgroundColour = wxColour(243,242,255);
 
@@ -107,6 +129,37 @@ void MainFrame::connect(const char* address, int port) {
 MainFrame::~MainFrame() {
     io.stop();
     ioThread.join();
+
+    threadsWork = false;
+    messageSend.join();
+    messageReceive.join();
+}
+
+void MainFrame::sendButton(wxCommandEvent &event) {
+    Message temp;
+    messageDisplay->AppendString("You: " + messageInput->GetValue());
+    temp << static_cast<std::string>(messageInput->GetValue());
+    messageInput->Clear();
+
+    outgoingMessages.addToQueue(temp);
+
+    event.Skip();
+}
+
+void MainFrame::sendMessage() {
+    connection.sendHeader(outgoingMessages.getFromQueue());
+}
+
+void MainFrame::messageReceived() {
+    auto event = new wxThreadEvent();
+    event->SetPayload(connection.retreiveMsgFromQueue());
+    wxQueueEvent(this, event);
+}
+
+void MainFrame::messagePrint(wxThreadEvent& event) {
+    messageDisplay->AppendString("Chatter: " + event.GetPayload<Message>().string());
+
+    event.Skip();
 }
 
 NewConnectionDialog::NewConnectionDialog(MainFrame *parent, wxWindowID id) : wxDialog(parent, id, "New connection", wxDefaultPosition, wxSize(200,140)), parent(parent) {

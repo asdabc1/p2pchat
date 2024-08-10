@@ -19,14 +19,14 @@ class ChatApp : public wxApp {
     bool OnInit() override;
 
 public:
-
     int port;
+
 };
 
 class MainFrame : public wxFrame {
 public:
     explicit MainFrame(int port);
-    ~MainFrame();
+    ~MainFrame() override;
 
     void connect(const char* address, int port);
 
@@ -35,8 +35,16 @@ private:
     io_context io;
     executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};
     Connection connection;
+    MsgQ outgoingMessages;
 
+    bool threadsWork = true;
     std::thread ioThread;
+    std::thread messageSend;
+    std::thread messageReceive;
+
+    wxListBox* messageDisplay;
+    wxTextCtrl* messageInput;
+    wxButton* messageSendButton;
 
     void connect(wxCommandEvent& event);
     void disconnect(wxCommandEvent& event);
@@ -46,6 +54,12 @@ private:
     void changeFontColor(wxCommandEvent& event);
     void helpPort(wxCommandEvent& event);
     void helpAbout(wxCommandEvent& event);
+
+    void sendButton(wxCommandEvent& event);
+
+    void sendMessage();
+    void messageReceived();
+    void messagePrint(wxThreadEvent& event);
 };
 
 class NewConnectionDialog : public wxDialog {
@@ -62,7 +76,7 @@ private:
 
 class InitWindow : public wxDialog {
 public:
-    InitWindow(ChatApp* owner);
+    explicit InitWindow(ChatApp* owner);
 
 private:
 

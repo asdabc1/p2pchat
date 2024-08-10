@@ -18,3 +18,11 @@ Message& Message::operator<<(std::string input) {
     memcpy(body.data(), input.data(), head.size);
     return *this;
 }
+
+std::string Message::string() const {
+    std::string val;
+    val.resize(head.size);
+
+    memcpy(val.data(), body.data(), head.size);
+    return val;
+}

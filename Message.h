@@ -34,6 +34,8 @@ public:
 
     friend std::ostream& operator<<(std::ostream& os, Message& msg);
     Message& operator<<(std::string input);
+
+    std::string string() const;
 };
 
 #endif //CHAT_MESSAGE_H

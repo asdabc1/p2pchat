@@ -44,7 +44,7 @@ void Connection::receiveConnection() {
 }
 
 
-ConnectionAcceptDialog::ConnectionAcceptDialog(Connection* con, ip::tcp::socket socket) : wxDialog(nullptr, wxID_ANY, "New connection pending", wxDefaultPosition, wxSize(300, 300)), tempSocket(std::move(socket)) {
+ConnectionAcceptDialog::ConnectionAcceptDialog(Connection* con, ip::tcp::socket socket) : wxDialog(nullptr, wxID_ANY, "New connection pending", wxDefaultPosition, wxSize(350, 350)), tempSocket(std::move(socket)) {
     connection = con;
 
     std::stringstream temp;
@@ -64,6 +64,7 @@ ConnectionAcceptDialog::ConnectionAcceptDialog(Connection* con, ip::tcp::socket 
 void ConnectionAcceptDialog::onAccept(wxCommandEvent& event) {
     connection->soc = std::move(tempSocket);
     connection->isConnected = true;
+    connection->receiveHeader();
     this->Close(false);
 }
 
@@ -74,7 +75,9 @@ void ConnectionAcceptDialog::onReject(wxCommandEvent& event) {
 
 void Connection::disconnect() {
     soc.close();
-    std::cout << "\n\ndisconnected\n";
+
+    wxMessageBox("Disconnected", "", wxOK | wxICON_EXCLAMATION);
+
     isConnected = false;
 }
 
