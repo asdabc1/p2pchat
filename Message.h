@@ -40,7 +40,4 @@ public:
     std::string string() const;
 };
 
-const Message acceptMsg(types::verification, 1);
-const Message rejectMsg(types::verification, 0);
-
 #endif //CHAT_MESSAGE_H

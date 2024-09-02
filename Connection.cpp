@@ -7,10 +7,16 @@ Connection::Connection(io_context& io, unsigned int port) : io(io), soc(io), tem
 
     soc.open(ip::tcp::v4());
     soc.bind(ip::tcp::endpoint(add, port));
+
+    usedPort = port;
 }
 
 void Connection::connect(const char* address, unsigned int port) {
-    usedPort = port;
+    if (!soc.is_open()) {
+        soc.open(ip::tcp::v4());
+        soc.bind(ip::tcp::endpoint(ip::address_v4::from_string("127.0.0.1"), usedPort));
+    }
+
     ip::address_v4 add = boost::asio::ip::address_v4::from_string(address);
 
     ip::tcp::endpoint remoteChatter(add, port);
@@ -19,8 +25,8 @@ void Connection::connect(const char* address, unsigned int port) {
     soc.connect(remoteChatter, ec);
 
     if (!ec) {
-        //this->receiveHeader();
-        wxMessageBox("Now connected.", "", wxOK | wxICON_INFORMATION);
+        this->receiveHeader();
+        isConnected = true;
     }
     else
         wxMessageBox("Connection error: " + ec.message(), "error", wxOK | wxICON_ERROR);
@@ -45,10 +51,9 @@ void Connection::receiveConnection() {
 
 void Connection::disconnect() {
     soc.close();
+    isConnected = false;
 
     wxMessageBox("Disconnected", "", wxOK | wxICON_EXCLAMATION);
-
-    isConnected = false;
 }
 
 void Connection::receiveHeader() {
@@ -132,15 +137,13 @@ void ConnectionAcceptDialog::onAccept(wxCommandEvent& event) {
     connection->soc = std::move(tempSocket);
     connection->isConnected = true;
 
-    connection->sendHeader(acceptMsg);
-
-    //connection->receiveHeader();
+    connection->receiveHeader();
 
     this->Close(false);
 }
 
 void ConnectionAcceptDialog::onReject(wxCommandEvent& event) {
-    connection->sendHeader(rejectMsg);
+    tempSocket.close();
 
     this->Close(true);
 }

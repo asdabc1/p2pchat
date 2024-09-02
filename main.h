@@ -23,6 +23,8 @@ public:
 
 };
 
+class NewConnectionDialog;
+
 class MainFrame : public wxFrame {
 public:
     explicit MainFrame(int port);
@@ -32,6 +34,8 @@ public:
     void portChange(int port) {connection.changePort(port);}
 
 private:
+
+    friend class NewConnectionDialog;
 
     io_context io;
     executor_work_guard<decltype(io.get_executor())> work{io.get_executor()};

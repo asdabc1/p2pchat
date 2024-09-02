@@ -90,32 +90,7 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
 
 void MainFrame::connect(wxCommandEvent &event) {
     auto dial = new NewConnectionDialog(this, IDconnect);
-    dial->ShowModal();
-
-    std::thread temp([this](){
-        for (int i = 0; i < 20; i++) {
-            std::this_thread::sleep_for(chrono::seconds(1));
-
-            if (connection.qIsEmpty())
-                continue;
-
-            Message verificationMsg = connection.retreiveMsgFromQueue();
-
-            if (verificationMsg == acceptMsg) {
-                connection.isUp() = true;
-                wxMessageBox("Connection accepted", "", wxOK | wxICON_INFORMATION);
-                break;
-            }
-            else {
-                connection.isUp() = false;
-                wxMessageBox("Connection rejected", "", wxOK | wxICON_EXCLAMATION);
-                connection.socReset();
-                break;
-            }
-        }
-    });
-    temp.detach();
-
+    dial->Show(true);
 }
 
 void MainFrame::disconnect(wxCommandEvent &event) {
