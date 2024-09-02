@@ -1,7 +1,6 @@
 #ifndef CHAT_MAIN_H
 #define CHAT_MAIN_H
 
-#include <iostream>
 #include <string>
 #include <thread>
 #include <chrono>
@@ -11,6 +10,7 @@
 #include <boost/asio.hpp>
 
 #include <wx/wx.h>
+#include <wx/fontdlg.h>
 
 #include "Connection.h"
 #include "MsgQ.h"
@@ -29,6 +29,7 @@ public:
     ~MainFrame() override;
 
     void connect(const char* address, int port);
+    void portChange(int port) {connection.changePort(port);}
 
 private:
 
@@ -50,8 +51,8 @@ private:
     void disconnect(wxCommandEvent& event);
     void changePort(wxCommandEvent& event);
     void aboutConnection(wxCommandEvent& event);
-    void changeFontSize(wxCommandEvent& event);
-    void changeFontColor(wxCommandEvent& event);
+    void changeFont(wxCommandEvent& event);
+    void changeBackground(wxCommandEvent& event);
     void helpPort(wxCommandEvent& event);
     void helpAbout(wxCommandEvent& event);
 
@@ -82,6 +83,17 @@ private:
 
     wxTextCtrl* portInput = nullptr;
     ChatApp* owner;
+
+    void portProvided(wxCommandEvent& event);
+};
+
+class PortChangeWindow : public wxDialog {
+public:
+    explicit PortChangeWindow(MainFrame* owner);
+
+private:
+    wxTextCtrl* portInput = nullptr;
+    MainFrame* owner;
 
     void portProvided(wxCommandEvent& event);
 };

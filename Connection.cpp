@@ -10,6 +10,7 @@ Connection::Connection(io_context& io, unsigned int port) : io(io), soc(io), tem
 }
 
 void Connection::connect(const char* address, unsigned int port) {
+    usedPort = port;
     ip::address_v4 add = boost::asio::ip::address_v4::from_string(address);
 
     ip::tcp::endpoint remoteChatter(add, port);
@@ -18,12 +19,11 @@ void Connection::connect(const char* address, unsigned int port) {
     soc.connect(remoteChatter, ec);
 
     if (!ec) {
-        std::cout << "now connected\n";
-        isConnected = true;
-        this->receiveHeader();
+        //this->receiveHeader();
+        wxMessageBox("Now connected.", "", wxOK | wxICON_INFORMATION);
     }
     else
-        std::cout << "Connection error: " << ec.message() << std::endl;
+        wxMessageBox("Connection error: " + ec.message(), "error", wxOK | wxICON_ERROR);
 }
 
 void Connection::receiveConnection() {
@@ -43,36 +43,6 @@ void Connection::receiveConnection() {
 
 }
 
-
-ConnectionAcceptDialog::ConnectionAcceptDialog(Connection* con, ip::tcp::socket socket) : wxDialog(nullptr, wxID_ANY, "New connection pending", wxDefaultPosition, wxSize(350, 350)), tempSocket(std::move(socket)) {
-    connection = con;
-
-    std::stringstream temp;
-    std::string remoteAddress;
-
-    temp << tempSocket.remote_endpoint();
-    temp >> remoteAddress;
-
-    auto connectInfo = new wxStaticText(this, wxID_ANY, "New connection request from: " + remoteAddress, wxPoint(10, 10));
-    auto accept = new wxButton(this, 2140, "Accept", wxPoint(10, 250), wxSize(50, -1));
-    auto reject = new wxButton(this, 2141, "Reject", wxPoint(250, 250), wxSize(50, -1));
-
-    Bind(wxEVT_BUTTON, &ConnectionAcceptDialog::onAccept, this, 2140);
-    Bind(wxEVT_BUTTON, &ConnectionAcceptDialog::onReject, this, 2141);
-    }
-
-void ConnectionAcceptDialog::onAccept(wxCommandEvent& event) {
-    connection->soc = std::move(tempSocket);
-    connection->isConnected = true;
-    connection->receiveHeader();
-    this->Close(false);
-}
-
-void ConnectionAcceptDialog::onReject(wxCommandEvent& event) {
-    this->Close(true);
-}
-
-
 void Connection::disconnect() {
     soc.close();
 
@@ -89,7 +59,6 @@ void Connection::receiveHeader() {
         }
 
         else {
-            std::cout << "Failed to receive the header of the message: " << ec.message() << '\n';
             disconnect();
         }
     });
@@ -104,7 +73,6 @@ void Connection::receiveBody() {
         }
 
         else {
-            std::cout << "Failed to receive the contents of the message: " << ec.message() << '\n';\
             disconnect();
         }
     });
@@ -116,7 +84,6 @@ void Connection::sendHeader(Message msg) {
             sendBody(msg);
         }
         else {
-            std::cout << "Failed to send the header of a message: " << ec.message() << std::endl;
             disconnect();
         }
     });
@@ -125,19 +92,55 @@ void Connection::sendHeader(Message msg) {
 void Connection::sendBody(Message msg) {
     async_write(soc, buffer(msg.body.data(), msg.head.size), [this](const std::error_code& ec, size_t length) {
         if (ec) {
-            std::cout << "Failed to send the contents of the message: " << ec.message() << '\n';
             disconnect();
         }
     });
 }
 
 void Connection::changePort(int port) {
+    unsigned int portVal = port == 0 ? usedPort : port;
     ip::address_v4 add = ip::address_v4::from_string("127.0.0.1");
 
+    soc.close();
+    soc.open(ip::tcp::v4());
     soc.bind(ip::tcp::endpoint(add, port));
 }
 
 void Connection::connectionReceived(wxThreadEvent &event) {
     auto dial = new ConnectionAcceptDialog(this, std::move(this->tempAcceptorSocket));
     dial->Show(true);
+}
+
+ConnectionAcceptDialog::ConnectionAcceptDialog(Connection* con, ip::tcp::socket socket) : wxDialog(nullptr, wxID_ANY, "New connection pending", wxDefaultPosition, wxSize(350, 350)), tempSocket(std::move(socket)) {
+    connection = con;
+
+    std::stringstream temp;
+    std::string remoteAddress;
+
+    temp << tempSocket.remote_endpoint();
+    temp >> remoteAddress;
+
+    auto connectInfo = new wxStaticText(this, wxID_ANY, "New connection request from: " + remoteAddress, wxPoint(10, 10));
+    auto accept = new wxButton(this, 2140, "Accept", wxPoint(10, 250), wxSize(50, -1));
+    auto reject = new wxButton(this, 2141, "Reject", wxPoint(250, 250), wxSize(50, -1));
+
+    Bind(wxEVT_BUTTON, &ConnectionAcceptDialog::onAccept, this, 2140);
+    Bind(wxEVT_BUTTON, &ConnectionAcceptDialog::onReject, this, 2141);
+}
+
+void ConnectionAcceptDialog::onAccept(wxCommandEvent& event) {
+    connection->soc = std::move(tempSocket);
+    connection->isConnected = true;
+
+    connection->sendHeader(acceptMsg);
+
+    //connection->receiveHeader();
+
+    this->Close(false);
+}
+
+void ConnectionAcceptDialog::onReject(wxCommandEvent& event) {
+    connection->sendHeader(rejectMsg);
+
+    this->Close(true);
 }

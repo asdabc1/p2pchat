@@ -10,8 +10,8 @@ enum {
    IDdisconnect = 2,
    IDportChange = 3,
    IDaboutCon = 4,
-   IDfontSize = 5,
-   IDfontColor = 6,
+   IDfont = 5,
+   IDbackground = 6,
    IDaboutPort = 7,
 
    IDsend = 8,
@@ -35,14 +35,16 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
         while(threadsWork)
             if (!outgoingMessages.queue.empty())
                 sendMessage();
+
         std::this_thread::sleep_for(std::chrono::seconds(1));
     });
     messageReceive = std::thread([this]() {
         while(threadsWork)
             if(!connection.qIsEmpty())
                 messageReceived();
+
         std::this_thread::sleep_for(std::chrono::seconds(1));
-    });
+    }); //message checks with asio timers
 
     auto menuConnection = new wxMenu();
     menuConnection->Append(IDconnect, "&Connect\tCtrl-N");
@@ -51,8 +53,8 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
     menuConnection->Append(IDaboutCon, "&About connection\tCtrl-I");
 
     auto menuAppearance = new wxMenu();
-    menuAppearance->Append(IDfontSize, "&Font size");
-    menuAppearance->Append(IDfontColor, "&Font color");
+    menuAppearance->Append(IDfont, "&Font");
+    menuAppearance->Append(IDbackground, "&Background");
 
     auto menuApp = new wxMenu();
     menuApp->Append(IDaboutPort, "&About port selection");
@@ -71,6 +73,10 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
     Bind(wxEVT_MENU, &MainFrame::helpAbout, this, wxID_ABOUT);
     Bind(wxEVT_MENU, &MainFrame::helpPort, this, IDaboutPort);
     Bind(wxEVT_MENU, &MainFrame::connect, this, IDconnect);
+    Bind(wxEVT_MENU, &MainFrame::disconnect, this, IDdisconnect);
+    Bind(wxEVT_MENU, &MainFrame::changeFont, this, IDfont);
+    Bind(wxEVT_MENU, &MainFrame::changeBackground, this, IDbackground);
+    Bind(wxEVT_MENU, &MainFrame::changePort, this, IDportChange);
 
     messageDisplay = new wxListBox(this, wxID_ANY, wxPoint(10, 10), wxSize(800, 500));
     messageInput = new wxTextCtrl(this, wxID_ANY, "",wxPoint(10, 525), wxSize(725, -1));
@@ -84,7 +90,32 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
 
 void MainFrame::connect(wxCommandEvent &event) {
     auto dial = new NewConnectionDialog(this, IDconnect);
-    dial->Show(true);
+    dial->ShowModal();
+
+    std::thread temp([this](){
+        for (int i = 0; i < 20; i++) {
+            std::this_thread::sleep_for(chrono::seconds(1));
+
+            if (connection.qIsEmpty())
+                continue;
+
+            Message verificationMsg = connection.retreiveMsgFromQueue();
+
+            if (verificationMsg == acceptMsg) {
+                connection.isUp() = true;
+                wxMessageBox("Connection accepted", "", wxOK | wxICON_INFORMATION);
+                break;
+            }
+            else {
+                connection.isUp() = false;
+                wxMessageBox("Connection rejected", "", wxOK | wxICON_EXCLAMATION);
+                connection.socReset();
+                break;
+            }
+        }
+    });
+    temp.detach();
+
 }
 
 void MainFrame::disconnect(wxCommandEvent &event) {
@@ -92,7 +123,8 @@ void MainFrame::disconnect(wxCommandEvent &event) {
 }
 
 void MainFrame::changePort(wxCommandEvent &event) {
-
+    auto dial = new PortChangeWindow(this);
+    dial->Show(true);
 }
 
 void MainFrame::aboutConnection(wxCommandEvent &event) {
@@ -106,11 +138,11 @@ void MainFrame::aboutConnection(wxCommandEvent &event) {
     wxMessageBox(connection.isUp() ? "Connected to host: " + temp : "not connected", "Connection information", wxOK | wxICON_INFORMATION);
 }
 
-void MainFrame::changeFontSize(wxCommandEvent &event) {
+void MainFrame::changeFont(wxCommandEvent &event) {
 
 }
 
-void MainFrame::changeFontColor(wxCommandEvent &event) {
+void MainFrame::changeBackground(wxCommandEvent &event) {
 
 }
 
@@ -193,4 +225,18 @@ InitWindow::InitWindow(ChatApp *owner) : wxDialog(nullptr, wxID_ANY, "Port selec
 void InitWindow::portProvided(wxCommandEvent &event) {
     owner->port = std::stoi(static_cast<std::string>(portInput->GetValue()));
     this->Close(true);
+}
+
+PortChangeWindow::PortChangeWindow(MainFrame *owner) : wxDialog(nullptr, wxID_ANY, "Port selection", wxDefaultPosition, wxSize(200,140)), owner(owner) {
+    auto portLabel = new wxStaticText(this, wxID_ANY, "Port: ", wxPoint(10, 10));
+    portInput = new wxTextCtrl(this, wxID_ANY, "", wxPoint(50, 10));
+
+    auto okButton = new wxButton(this, 2140, "Ok", wxPoint(140, 70), wxSize(40, -1));
+
+    Bind(wxEVT_BUTTON, &PortChangeWindow::portProvided, this, 2140);
+}
+
+void PortChangeWindow::portProvided(wxCommandEvent &event) {
+    owner->portChange(std::stoi(static_cast<std::string>(portInput->GetValue())));
+    this->Close();
 }

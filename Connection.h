@@ -2,7 +2,6 @@
 #define CHAT_CONNECTION_H
 
 #include <boost/asio.hpp>
-#include <iostream>
 #include <thread>
 #include <sstream>
 
@@ -30,6 +29,7 @@ private:
     MsgQ queue;
 
     bool isConnected = false;
+    unsigned int usedPort;
 
 public:
     void receiveHeader();
@@ -40,12 +40,14 @@ public:
     void connect(const char* address, unsigned int port);
     void receiveConnection();
     void disconnect();
-    void changePort(int port);
+    void changePort(int port = 0);
 
     void connectionReceived(wxThreadEvent& event);
 
     bool isUp() const {return isConnected;}
+    bool& isUp() {return isConnected;}
     bool socIsOpen() const {return soc.is_open();}
+    void socReset() {changePort();}
 
     bool qIsEmpty() const {return queue.queue.empty();}
     Message retreiveMsgFromQueue() {return queue.getFromQueue();}
