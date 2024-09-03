@@ -42,10 +42,9 @@ private:
     Connection connection;
     MsgQ outgoingMessages;
 
-    bool threadsWork = true;
     std::thread ioThread;
-    std::thread messageSend;
-    std::thread messageReceive;
+    steady_timer messageOperations;
+    void messageFunc();
 
     wxListBox* messageDisplay;
     wxTextCtrl* messageInput;

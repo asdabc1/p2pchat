@@ -26,25 +26,14 @@ bool ChatApp::OnInit() {
     return true;
 }
 
-MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPosition, wxSize(1150, 650)), connection(io, port) {
+MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPosition, wxSize(1150, 650)), connection(io, port), messageOperations(io, std::chrono::seconds(1)) {
     Bind(wxEVT_THREAD, &MainFrame::messagePrint, this);
 
     connection.receiveConnection();
+
+    messageOperations.async_wait([this](const std::error_code& e) { messageFunc(); });
+
     ioThread = std::thread([this](){io.run();});
-    messageSend = std::thread([this](){
-        while(threadsWork)
-            if (!outgoingMessages.queue.empty())
-                sendMessage();
-
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    });
-    messageReceive = std::thread([this]() {
-        while(threadsWork)
-            if(!connection.qIsEmpty())
-                messageReceived();
-
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-    }); //message checks with asio timers
 
     auto menuConnection = new wxMenu();
     menuConnection->Append(IDconnect, "&Connect\tCtrl-N");
@@ -136,10 +125,7 @@ void MainFrame::connect(const char* address, int port) {
 MainFrame::~MainFrame() {
     io.stop();
     ioThread.join();
-
-    threadsWork = false;
-    messageSend.join();
-    messageReceive.join();
+    messageOperations.cancel();
 }
 
 void MainFrame::sendButton(wxCommandEvent &event) {
@@ -167,6 +153,17 @@ void MainFrame::messagePrint(wxThreadEvent& event) {
     messageDisplay->AppendString("Chatter: " + event.GetPayload<Message>().string());
 
     event.Skip();
+}
+
+void MainFrame::messageFunc() {
+    if(!outgoingMessages.queue.empty())
+        sendMessage();
+
+    if(!connection.qIsEmpty())
+        messageReceived();
+
+    messageOperations.expires_at(messageOperations.expiry() + std::chrono::milliseconds(200));
+    messageOperations.async_wait([this](const std::error_code& e){ messageFunc(); });
 }
 
 NewConnectionDialog::NewConnectionDialog(MainFrame *parent, wxWindowID id) : wxDialog(parent, id, "New connection", wxDefaultPosition, wxSize(200,140)), parent(parent) {
