@@ -26,7 +26,7 @@ bool ChatApp::OnInit() {
     return true;
 }
 
-MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPosition, wxSize(1150, 650)), connection(io, port), messageOperations(io, std::chrono::seconds(1)) {
+MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPosition), connection(io, port), messageOperations(io, std::chrono::seconds(1)) {
     Bind(wxEVT_THREAD, &MainFrame::messagePrint, this);
 
     connection.receiveConnection();
@@ -67,9 +67,25 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
     Bind(wxEVT_MENU, &MainFrame::changeBackground, this, IDbackground);
     Bind(wxEVT_MENU, &MainFrame::changePort, this, IDportChange);
 
-    messageDisplay = new wxListBox(this, wxID_ANY, wxPoint(10, 10), wxSize(800, 500));
-    messageInput = new wxTextCtrl(this, wxID_ANY, "",wxPoint(10, 525), wxSize(725, -1));
-    messageSendButton = new wxButton(this, IDsend, "Send", wxPoint(750, 525), wxSize(65, -1));
+    this->SetMinSize(wxSize(800, 650));
+
+    auto sizer = new wxBoxSizer(wxVERTICAL);
+
+    messageDisplay = new wxListBox(this, wxID_ANY);
+
+    sizer->Add(messageDisplay, 1, wxEXPAND, 5);
+
+    auto botSizer = new wxBoxSizer(wxHORIZONTAL);
+
+    messageInput = new wxTextCtrl(this, wxID_ANY);
+    messageSendButton = new wxButton(this, IDsend, "Send");
+
+    botSizer->Add(messageInput, 1, wxALL, 5);
+    botSizer->Add(messageSendButton, 0, wxALL, 5);
+
+    sizer->Add(botSizer, 0, wxEXPAND, 5);
+
+    this->SetSizer(sizer);
 
     Bind(wxEVT_BUTTON, &MainFrame::sendButton, this, IDsend);
 

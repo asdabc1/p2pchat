@@ -6,7 +6,6 @@
 #include <string>
 
 enum class types {
-    verification,
     message,
     null
 };
