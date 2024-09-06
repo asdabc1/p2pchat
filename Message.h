@@ -2,7 +2,6 @@
 #define CHAT_MESSAGE_H
 
 #include <vector>
-#include <iostream>
 #include <string>
 
 enum class types {
@@ -32,7 +31,6 @@ public:
     Message(types type, uint8_t val);
     explicit Message(size_t size) : head(size) {this->update();}
 
-    friend std::ostream& operator<<(std::ostream& os, Message& msg);
     Message& operator<<(std::string input);
     bool operator==(const Message& otherMsg) const;
 

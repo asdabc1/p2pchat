@@ -1,35 +1,32 @@
 #include "Connection.h"
 
 Connection::Connection(io_context& io, unsigned int port) : io(io), soc(io), tempAcceptorSocket(io) , acceptor(io, ip::tcp::endpoint(ip::tcp::v4(), port)) {
-    Bind(wxEVT_THREAD, &Connection::connectionReceived, this);
+        Bind(wxEVT_THREAD, &Connection::connectionReceived, this);
 
-    ip::address_v4 add = ip::address_v4::from_string("127.0.0.1");
+        soc.open(ip::tcp::v4());
+        soc.set_option(socket_base::reuse_address (true));
+        soc.bind(ip::tcp::endpoint(ip::tcp::v4(), port));
 
-    soc.open(ip::tcp::v4());
-    soc.bind(ip::tcp::endpoint(add, port));
-
-    usedPort = port;
+        usedPort = port;
 }
 
 void Connection::connect(const char* address, unsigned int port) {
-    if (!soc.is_open()) {
-        soc.open(ip::tcp::v4());
-        soc.bind(ip::tcp::endpoint(ip::address_v4::from_string("127.0.0.1"), usedPort));
-    }
-
     ip::address_v4 add = boost::asio::ip::address_v4::from_string(address);
 
     ip::tcp::endpoint remoteChatter(add, port);
 
     boost::system::error_code ec;
-    soc.connect(remoteChatter, ec);
 
-    if (!ec) {
-        this->receiveHeader();
-        isConnected = true;
-    }
-    else
-        wxMessageBox("Connection error: " + ec.message(), "error", wxOK | wxICON_ERROR);
+    soc.async_connect(remoteChatter, [this](const std::error_code& ec) {
+        if (!ec) {
+            this->receiveHeader();
+            isConnected = true;
+        }
+        else
+            wxMessageBox("Connection error: " + ec.message(), "error", wxOK | wxICON_ERROR);
+    });
+
+
 }
 
 void Connection::receiveConnection() {
@@ -104,11 +101,10 @@ void Connection::sendBody(Message msg) {
 
 void Connection::changePort(int port) {
     unsigned int portVal = port == 0 ? usedPort : port;
-    ip::address_v4 add = ip::address_v4::from_string("127.0.0.1");
 
     soc.close();
     soc.open(ip::tcp::v4());
-    soc.bind(ip::tcp::endpoint(add, port));
+    soc.bind(ip::tcp::endpoint(ip::tcp::v4(), port));
 }
 
 void Connection::connectionReceived(wxThreadEvent &event) {

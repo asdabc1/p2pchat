@@ -67,7 +67,7 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
     Bind(wxEVT_MENU, &MainFrame::changeBackground, this, IDbackground);
     Bind(wxEVT_MENU, &MainFrame::changePort, this, IDportChange);
 
-    this->SetMinSize(wxSize(800, 650));
+    this->SetMinSize(wxSize(600, 450));
 
     auto sizer = new wxBoxSizer(wxVERTICAL);
 
