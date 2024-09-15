@@ -31,10 +31,10 @@ public:
     Message(types type, uint8_t val);
     explicit Message(size_t size) : head(size) {this->update();}
 
-    Message& operator<<(std::string input);
+    Message& operator<<(std::wstring input);
     bool operator==(const Message& otherMsg) const;
 
-    std::string string() const;
+    [[nodiscard]] std::wstring wstring() const;
 };
 
 #endif //CHAT_MESSAGE_H

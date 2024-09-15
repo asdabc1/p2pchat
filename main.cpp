@@ -12,6 +12,7 @@ enum {
    IDaboutCon = 4,
    IDfont = 5,
    IDbackground = 6,
+   IDdark = 9,
    IDaboutPort = 7,
 
    IDsend = 8,
@@ -44,6 +45,7 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
     auto menuAppearance = new wxMenu();
     menuAppearance->Append(IDfont, "&Font");
     menuAppearance->Append(IDbackground, "&Background");
+    menuAppearance->Append(IDdark, "&Dark mode");
 
     auto menuApp = new wxMenu();
     menuApp->Append(IDaboutPort, "&About port selection");
@@ -79,6 +81,7 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
 
     messageInput = new wxTextCtrl(this, wxID_ANY);
     messageSendButton = new wxButton(this, IDsend, "Send");
+    this->SetDefaultItem(messageSendButton);
 
     botSizer->Add(messageInput, 1, wxALL, 5);
     botSizer->Add(messageSendButton, 0, wxALL, 5);
@@ -145,9 +148,12 @@ MainFrame::~MainFrame() {
 }
 
 void MainFrame::sendButton(wxCommandEvent &event) {
+    if (messageInput->IsEmpty())
+        return;
+
     Message temp;
     messageDisplay->AppendString("You: " + messageInput->GetValue());
-    temp << static_cast<std::string>(messageInput->GetValue());
+    temp << static_cast<std::wstring>(messageInput->GetValue());
     messageInput->Clear();
 
     outgoingMessages.addToQueue(temp);
@@ -166,7 +172,7 @@ void MainFrame::messageReceived() {
 }
 
 void MainFrame::messagePrint(wxThreadEvent& event) {
-    messageDisplay->AppendString("Chatter: " + event.GetPayload<Message>().string());
+    messageDisplay->AppendString("Chatter: " + event.GetPayload<Message>().wstring());
 
     event.Skip();
 }
@@ -206,6 +212,7 @@ InitWindow::InitWindow(ChatApp *owner) : wxDialog(nullptr, wxID_ANY, "Port selec
     portInput = new wxTextCtrl(this, wxID_ANY, "", wxPoint(50, 10));
 
     auto okButton = new wxButton(this, 2137, "Ok", wxPoint(140, 70), wxSize(40, -1));
+    this->SetDefaultItem(okButton);
 
     Bind(wxEVT_BUTTON, &InitWindow::portProvided, this, 2137);
 }

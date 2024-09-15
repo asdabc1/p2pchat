@@ -47,7 +47,10 @@ void Connection::receiveConnection() {
 }
 
 void Connection::disconnect() {
-    soc.close();
+    try {
+        soc.close();
+    } catch (std::exception& e) {}
+
     isConnected = false;
 
     wxMessageBox("Disconnected", "", wxOK | wxICON_EXCLAMATION);

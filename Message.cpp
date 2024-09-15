@@ -1,16 +1,7 @@
 #include "Message.h"
 
-Message& Message::operator<<(std::string input) {
-    head.size = input.size();
-    head.messageType = types::message;
-    update();
-
-    memcpy(body.data(), input.data(), head.size);
-    return *this;
-}
-
-std::string Message::string() const {
-    std::string val;
+std::wstring Message::wstring() const {
+    std::wstring val;
     val.resize(head.size);
 
     memcpy(val.data(), body.data(), head.size);
@@ -25,4 +16,13 @@ Message::Message(types type, uint8_t val) {
 
 bool Message::operator==(const Message& otherMsg) const {
     return this->head.messageType == otherMsg.head.messageType && this->head.size && otherMsg.head.size && this->body == otherMsg.body;
+}
+
+Message &Message::operator<<(std::wstring input) {
+    head.size = input.size() * sizeof(wchar_t);
+    head.messageType = types::message;
+    update();
+
+    memcpy(body.data(), input.data(), head.size);
+    return *this;
 }
