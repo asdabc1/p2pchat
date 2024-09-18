@@ -47,11 +47,18 @@ void Connection::receiveConnection() {
 }
 
 void Connection::disconnect() {
-    try {
-        soc.close();
-    } catch (std::exception& e) {}
+    boost::system::error_code ignored;
+
+    soc.close(ignored);
 
     isConnected = false;
+
+    if (!soc.is_open())
+        soc.open(ip::tcp::v4(), ignored);
+
+    soc.set_option(socket_base::reuse_address(true));
+
+    soc.bind(ip::tcp::endpoint(ip::tcp::v4(), usedPort), ignored);
 
     wxMessageBox("Disconnected", "", wxOK | wxICON_EXCLAMATION);
 }
@@ -103,11 +110,22 @@ void Connection::sendBody(Message msg) {
 }
 
 void Connection::changePort(int port) {
-    unsigned int portVal = port == 0 ? usedPort : port;
+    if (port < 1 || port > 65535)
+        return;
+
+    usedPort = port;
+
+    ip::tcp::socket tempSoc(io);
+
+    tempSoc.open(ip::tcp::v4());
+    tempSoc.set_option(socket_base::reuse_address(true));
+    tempSoc.bind(ip::tcp::endpoint(ip::tcp::v4(), port));
 
     soc.close();
-    soc.open(ip::tcp::v4());
-    soc.bind(ip::tcp::endpoint(ip::tcp::v4(), port));
+    soc = std::move(tempSoc);
+
+    acceptor = ip::tcp::acceptor(io, ip::tcp::endpoint(ip::tcp::v4(), port));
+    isConnected = false;
 }
 
 void Connection::connectionReceived(wxThreadEvent &event) {
