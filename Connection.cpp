@@ -10,8 +10,16 @@ Connection::Connection(io_context& io, unsigned int port) : io(io), soc(io), tem
         usedPort = port;
 }
 
+Connection::~Connection() {
+    acceptor.cancel();
+    acceptor.close();
+    soc.cancel();
+    soc.close();
+    tempAcceptorSocket.close();
+}
+
 void Connection::connect(const char* address, unsigned int port) {
-    ip::address_v4 add = boost::asio::ip::address_v4::from_string(address);
+    ip::address_v4 add = boost::asio::ip::make_address_v4(address);
 
     ip::tcp::endpoint remoteChatter(add, port);
 
@@ -37,11 +45,8 @@ void Connection::receiveConnection() {
             auto event = new wxThreadEvent();
             event->SetPayload(this);
             wxQueueEvent(this, event);
+            receiveConnection();
         }
-        else {
-            wxMessageBox("Error with connection reception:" + ec.message(), "Error", wxCLOSE | wxICON_ERROR);
-        }
-        receiveConnection();
     });
 
 }

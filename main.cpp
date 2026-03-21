@@ -34,7 +34,9 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
 
     messageOperations.async_wait([this](const std::error_code& e) { messageFunc(); });
 
-    ioThread = std::thread([this](){io.run();});
+    ioThread = std::thread([this]() {
+        io.run();
+    });
 
     auto menuConnection = new wxMenu();
     menuConnection->Append(IDconnect, "&Connect\tCtrl-N");
@@ -59,7 +61,7 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
 
     SetMenuBar(bar);
 
-    Bind(wxEVT_MENU, [=](wxCommandEvent& event){Close(true); io.stop(); ioThread.join();}, wxID_EXIT);
+    Bind(wxEVT_MENU, [=](wxCommandEvent& event){Close(true);}, wxID_EXIT);
     Bind(wxEVT_MENU, &MainFrame::aboutConnection, this, IDaboutCon);
     Bind(wxEVT_MENU, &MainFrame::helpAbout, this, wxID_ABOUT);
     Bind(wxEVT_MENU, &MainFrame::helpPort, this, IDaboutPort);
@@ -142,9 +144,12 @@ void MainFrame::connect(const char* address, int port) {
 }
 
 MainFrame::~MainFrame() {
+    messageOperations.cancel();
+    work.reset();
     io.stop();
     ioThread.join();
-    messageOperations.cancel();
+
+    wxTheApp->ExitMainLoop();
 }
 
 void MainFrame::sendButton(wxCommandEvent &event) {
@@ -172,7 +177,7 @@ void MainFrame::messageReceived() {
 }
 
 void MainFrame::messagePrint(wxThreadEvent& event) {
-    messageDisplay->AppendString("Chatter: " + event.GetPayload<Message>().wstring());
+    messageDisplay->AppendString(L"Chatter: " + event.GetPayload<Message>().wstring());
 
     event.Skip();
 }

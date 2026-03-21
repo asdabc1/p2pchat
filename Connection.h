@@ -55,7 +55,7 @@ public:
     ip::tcp::endpoint chatter() {return soc.remote_endpoint();}
 
     Connection(io_context& io, unsigned int port);
-    Connection();
+    ~Connection() override;
 };
 
 class ConnectionAcceptDialog  : public wxDialog {
