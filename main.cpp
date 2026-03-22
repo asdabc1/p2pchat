@@ -44,11 +44,6 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
     menuConnection->Append(IDportChange, "&Change used port\tCtrl-P");
     menuConnection->Append(IDaboutCon, "&About connection\tCtrl-I");
 
-    auto menuAppearance = new wxMenu();
-    menuAppearance->Append(IDfont, "&Font");
-    menuAppearance->Append(IDbackground, "&Background");
-    menuAppearance->Append(IDdark, "&Dark mode");
-
     auto menuApp = new wxMenu();
     menuApp->Append(IDaboutPort, "&About port selection");
     menuApp->Append(wxID_ABOUT);
@@ -56,7 +51,6 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
 
     auto bar = new wxMenuBar();
     bar->Append(menuConnection, "&Connection");
-    bar->Append(menuAppearance, "&Appearance");
     bar->Append(menuApp, "&Application");
 
     SetMenuBar(bar);
@@ -67,17 +61,18 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
     Bind(wxEVT_MENU, &MainFrame::helpPort, this, IDaboutPort);
     Bind(wxEVT_MENU, &MainFrame::connect, this, IDconnect);
     Bind(wxEVT_MENU, &MainFrame::disconnect, this, IDdisconnect);
-    Bind(wxEVT_MENU, &MainFrame::changeFont, this, IDfont);
-    Bind(wxEVT_MENU, &MainFrame::changeBackground, this, IDbackground);
     Bind(wxEVT_MENU, &MainFrame::changePort, this, IDportChange);
 
     this->SetMinSize(wxSize(600, 450));
 
     auto sizer = new wxBoxSizer(wxVERTICAL);
 
-    messageDisplay = new wxListBox(this, wxID_ANY);
+    messageDisplay = new wxScrolled<wxPanel>(this, wxID_ANY);
+    auto tempSizer = new wxBoxSizer(wxVERTICAL);
+    messageDisplay->SetSizer(tempSizer);
+    messageDisplay->SetScrollRate(0, 10);
 
-    sizer->Add(messageDisplay, 1, wxEXPAND, 5);
+    sizer->Add(messageDisplay, 1, wxEXPAND, 1);
 
     auto botSizer = new wxBoxSizer(wxHORIZONTAL);
 
@@ -95,7 +90,6 @@ MainFrame::MainFrame(int port) : wxFrame(nullptr, wxID_ANY, "Chat", wxDefaultPos
     Bind(wxEVT_BUTTON, &MainFrame::sendButton, this, IDsend);
 
     m_backgroundColour = wxColour(243,242,255);
-
 }
 
 void MainFrame::connect(wxCommandEvent &event) {
@@ -121,14 +115,6 @@ void MainFrame::aboutConnection(wxCommandEvent &event) {
     }
 
     wxMessageBox(connection.isUp() ? "Connected to host: " + temp : "not connected", "Connection information", wxOK | wxICON_INFORMATION);
-}
-
-void MainFrame::changeFont(wxCommandEvent &event) {
-
-}
-
-void MainFrame::changeBackground(wxCommandEvent &event) {
-
 }
 
 void MainFrame::helpPort(wxCommandEvent &event) {
@@ -157,11 +143,19 @@ void MainFrame::sendButton(wxCommandEvent &event) {
         return;
 
     Message temp;
-    messageDisplay->AppendString("You: " + messageInput->GetValue());
     temp << static_cast<std::wstring>(messageInput->GetValue());
+
+    auto bubble = new MessageBubble(temp, MessageBubbleType::own, messageDisplay);
+
+    messageDisplay->GetSizer()->Add(bubble, 0, wxALIGN_RIGHT | wxRIGHT, 5);
     messageInput->Clear();
 
     outgoingMessages.addToQueue(temp);
+
+    messageDisplay->GetSizer()->Layout();
+    messageDisplay->FitInside();
+    messageDisplay->Refresh();
+    messageDisplay->Scroll(-1, messageDisplay->GetScrollRange(wxVERTICAL));
 
     event.Skip();
 }
@@ -177,7 +171,14 @@ void MainFrame::messageReceived() {
 }
 
 void MainFrame::messagePrint(wxThreadEvent& event) {
-    messageDisplay->AppendString(L"Chatter: " + event.GetPayload<Message>().wstring());
+    auto bubble = new MessageBubble(event.GetPayload<Message>(), MessageBubbleType::external, messageDisplay);
+
+    messageDisplay->GetSizer()->Add(bubble, 0, wxLEFT | wxALIGN_LEFT, 5);
+
+    messageDisplay->GetSizer()->Layout();
+    messageDisplay->FitInside();
+    messageDisplay->Refresh();
+    messageDisplay->Scroll(-1, messageDisplay->GetScrollRange(wxVERTICAL));
 
     event.Skip();
 }

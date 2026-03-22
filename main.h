@@ -14,6 +14,7 @@
 
 #include "Connection.h"
 #include "MsgQ.h"
+#include "UIElements/MessageBubble.h"
 
 class ChatApp : public wxApp {
     bool OnInit() override;
@@ -46,7 +47,7 @@ private:
     steady_timer messageOperations;
     void messageFunc();
 
-    wxListBox* messageDisplay;
+    wxScrolled<wxPanel>* messageDisplay;
     wxTextCtrl* messageInput;
     wxButton* messageSendButton;
 
@@ -54,8 +55,6 @@ private:
     void disconnect(wxCommandEvent& event);
     void changePort(wxCommandEvent& event);
     void aboutConnection(wxCommandEvent& event);
-    void changeFont(wxCommandEvent& event);
-    void changeBackground(wxCommandEvent& event);
     void helpPort(wxCommandEvent& event);
     void helpAbout(wxCommandEvent& event);
 

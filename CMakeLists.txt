@@ -3,7 +3,7 @@ project(chat)
 
 set(CMAKE_CXX_STANDARD 17)
 
-find_package(Boost 1.84 REQUIRED)
+find_package(Boost REQUIRED)
 find_package(wxWidgets CONFIG REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 include_directories(${wxWidgets_INCLUDE_DIR})
@@ -18,6 +18,8 @@ add_executable(chat
         MsgQ.h
         Message.cpp
         main.h
-        )
+        UIElements/MessageBubble.cpp
+        UIElements/MessageBubble.h
+)
 
 target_link_libraries(chat PRIVATE wx::core wx::base)
