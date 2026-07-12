@@ -1,5 +1,5 @@
-Simple chat application project
-===============================
+P2P chat application project
+============================
 
 Technologies and libraries used
 -------------------------------
